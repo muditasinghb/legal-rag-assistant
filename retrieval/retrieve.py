@@ -36,11 +36,12 @@ def search_chunks(query: str, top_k: int = 3) -> list:
     )
     chunks = []
     for i in range(len(results["documents"][0])):
-        chunks.append({
-            "text":     results["documents"][0][i],
-            "source":   results["metadatas"][0][i]["source"],
-            "chunk_id": results["metadatas"][0][i]["chunk_index"]
-        })
+     chunks.append({
+    "text":     results["documents"][0][i],
+    "source":   results["metadatas"][0][i]["source"],
+    "page":     results["metadatas"][0][i].get("page", "?"),
+    "citation": results["metadatas"][0][i].get("citation", "")
+})
     return chunks
 
 # ── Build prompt with retrieved context ─────────────────────
@@ -89,10 +90,10 @@ def ask_question(question: str) -> dict:
     print(f"\n💬 Answer:\n{answer}")
 
     return {
-        "question": question,
-        "answer":   answer,
-        "sources":  chunks
-    }
+    "question": question,
+    "answer":   answer,
+    "sources":  [{"source": c["source"], "citation": c["citation"]} for c in chunks]
+}
 
 # ── Test it out ──────────────────────────────────────────────
 if __name__ == "__main__":

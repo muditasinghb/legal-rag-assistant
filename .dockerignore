@@ -1,0 +1,10 @@
+.env
+.git
+.gitignore
+__pycache__
+*.pyc
+*.pyo
+chroma_db/
+data/
+*.pdf
+.DS_Store
