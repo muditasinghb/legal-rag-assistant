@@ -12,11 +12,11 @@ st.set_page_config(
 )
 
 # ── API URL ───────────────────────────────────────────────────
-API_URL = "http://127.0.0.1:8000"
+API_URL = "http://0.0.0.0:8000"
 
 # ── Header ───────────────────────────────────────────────────
 st.title("⚖️ Legal Document Assistant")
-st.markdown("Upload a legal document and ask questions about it in plain English.")
+st.markdown("Upload a legal document and ask questions")
 st.divider()
 
 # ── Two columns layout ───────────────────────────────────────
