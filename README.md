@@ -1,4 +1,3 @@
-# ⚖️ Legal RAG Assistant
 ---
 title: Legal RAG Assistant
 emoji: ⚖️
@@ -7,6 +6,9 @@ colorTo: indigo
 sdk: docker
 pinned: false
 ---
+
+# ⚖️ Legal RAG Assistant
+
 > An end-to-end Retrieval Augmented Generation (RAG) pipeline that lets you upload any legal document and ask questions about it in plain English — with cited, accurate answers.
 
 ![Python](https://img.shields.io/badge/Python-3.10+-blue?style=flat-square&logo=python)
@@ -46,7 +48,6 @@ System  → "The confidentiality period is 3 years from the date
 ---
 
 ## 🏗️ Architecture
-
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                      INGESTION PIPELINE                      │
@@ -80,7 +81,6 @@ System  → "The confidentiality period is 3 years from the date
 ---
 
 ## 📁 Project Structure
-
 ```
 legal-rag-assistant/
 │
@@ -187,7 +187,6 @@ Once you upload a contract, try:
 ---
 
 ## 🧠 How RAG Works (Simply)
-
 ```
 Traditional AI          RAG (This Project)
 ──────────────          ──────────────────
@@ -201,8 +200,6 @@ general training            ↓
                         (grounded, cited, accurate)
 ```
 
-The LLM never guesses — it only answers from the document you uploaded.
-
 ---
 
 ## 🚀 Future Improvements
@@ -212,7 +209,6 @@ The LLM never guesses — it only answers from the document you uploaded.
 - [ ] Support for DOCX and TXT files
 - [ ] Fine-tuned embeddings on legal corpus (CUAD dataset)
 - [ ] Authentication and user sessions
-- [ ] Deployed on cloud (Railway + Streamlit Cloud)
 
 ---
 
