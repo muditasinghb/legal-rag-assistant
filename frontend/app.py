@@ -12,7 +12,7 @@ st.set_page_config(
 )
 
 # ── API URL ───────────────────────────────────────────────────
-API_URL = "http://0.0.0.0:8000"
+API_URL = "http://127.0.0.1:8000"
 
 # ── Header ───────────────────────────────────────────────────
 st.title("⚖️ Legal Document Assistant")
@@ -120,11 +120,12 @@ with col2:
     st.divider()
     st.markdown("**💡 Try asking:**")
     suggestions = [
-        "What is the confidentiality period?",
+        "What are the key obligations of each party?",
         "Which country's law governs this agreement?",
-        "How many days notice is required to terminate?",
-        "Who owns the intellectual property?",
-        "What are the exceptions to confidentiality?"
+        "How can this agreement be terminated?",
+        "What are the payment terms?",
+        "What are the penalties for breach of contract?",
+        "What is the duration of this agreement?"
     ]
     cols = st.columns(2)
     for i, s in enumerate(suggestions):
