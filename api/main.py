@@ -1,14 +1,13 @@
 # api/main.py
 
 import os
-import sys
 from pathlib import Path
 from dotenv import load_dotenv
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import chromadb
-import google.generativeai as genai
+from sentence_transformers import SentenceTransformer
 from groq import Groq
 import shutil
 
@@ -16,9 +15,10 @@ import shutil
 env_path = Path(__file__).parent.parent / ".env"
 load_dotenv(dotenv_path=env_path)
 
-GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
-GROQ_API_KEY   = os.getenv("GROQ_API_KEY")
-genai.configure(api_key=GOOGLE_API_KEY)
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+
+# ── Load BGE embedding model once at startup ─────────────────
+embedding_model = SentenceTransformer("BAAI/bge-base-en-v1.5")
 
 # ── Setup FastAPI ────────────────────────────────────────────
 app = FastAPI(title="Legal RAG API")
@@ -39,25 +39,15 @@ class QuestionRequest(BaseModel):
     question: str
 
 # ── Helper: embed text ───────────────────────────────────────
-def embed_text(text: str, task: str = "retrieval_query") -> list:
-    result = genai.embed_content(
-        model="models/gemini-embedding-001",
-        content=text,
-        task_type=task
-    )
-    return result["embedding"]
+def embed_text(text: str) -> list:
+    return embedding_model.encode(text, normalize_embeddings=True).tolist()
 
-def embed_texts_batch(texts: list, task: str = "retrieval_document") -> list:
-    result = genai.embed_content(
-        model="models/gemini-embedding-001",
-        content=texts,
-        task_type=task
-    )
-    return result["embedding"]
+def embed_texts_batch(texts: list) -> list:
+    return embedding_model.encode(texts, normalize_embeddings=True, batch_size=32).tolist()
 
 # ── Helper: search ChromaDB ──────────────────────────────────
 def search_chunks(query: str, top_k: int = 3) -> list:
-    query_embedding = embed_text(query)
+    query_embedding = embed_text(f"Represent this sentence for searching relevant passages: {query}")
     results = collection.query(
         query_embeddings=[query_embedding],
         n_results=top_k
