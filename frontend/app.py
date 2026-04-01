@@ -2,7 +2,6 @@
 
 import streamlit as st
 import requests
-from pathlib import Path
 
 # ── Page config ──────────────────────────────────────────────
 st.set_page_config(
@@ -16,7 +15,7 @@ API_URL = "http://127.0.0.1:8000"
 
 # ── Header ───────────────────────────────────────────────────
 st.title("⚖️ Legal Document Assistant")
-st.markdown("Upload a legal document and ask questions")
+st.markdown("Upload one or more legal documents and ask questions across all of them.")
 st.divider()
 
 # ── Two columns layout ───────────────────────────────────────
@@ -26,26 +25,27 @@ col1, col2 = st.columns([1, 2])
 # LEFT COLUMN — Upload + Documents
 # ════════════════════════════════════════════════
 with col1:
-    st.subheader("📄 Upload Document")
+    st.subheader("📄 Upload Documents")
 
-    uploaded_file = st.file_uploader(
-        "Upload a PDF contract or legal document",
-        type=["pdf"]
+    uploaded_files = st.file_uploader(
+        "Upload PDF contracts or legal documents",
+        type=["pdf"],
+        accept_multiple_files=True
     )
 
-    if uploaded_file:
-        if st.button("📥 Ingest Document", use_container_width=True):
-            with st.spinner("Reading and embedding document..."):
-                response = requests.post(
-                    f"{API_URL}/ingest",
-                    files={"file": (uploaded_file.name, uploaded_file, "application/pdf")}
-                )
-                if response.status_code == 200:
-                    data = response.json()
-                    st.success(f"✅ {data['message']}")
-                    st.info(f"📦 Created {data['chunks']} searchable chunks")
-                else:
-                    st.error("❌ Failed to ingest document")
+    if uploaded_files:
+        if st.button("📥 Ingest All Documents", use_container_width=True):
+            for uploaded_file in uploaded_files:
+                with st.spinner(f"Processing {uploaded_file.name}..."):
+                    response = requests.post(
+                        f"{API_URL}/ingest",
+                        files={"file": (uploaded_file.name, uploaded_file, "application/pdf")}
+                    )
+                    if response.status_code == 200:
+                        data = response.json()
+                        st.success(f"✅ {data['message']} — {data['chunks']} chunks")
+                    else:
+                        st.error(f"❌ Failed to ingest {uploaded_file.name}")
 
     st.divider()
 
@@ -71,41 +71,51 @@ with col2:
     if "messages" not in st.session_state:
         st.session_state.messages = []
 
+    # ── Clear chat button ─────────────────────────────────────
+    if st.session_state.messages:
+        if st.button("🗑️ Clear Chat", use_container_width=False):
+            st.session_state.messages = []
+            st.rerun()
+
     # ── Display chat history ──────────────────────────────────
     for msg in st.session_state.messages:
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
             if msg["role"] == "assistant" and "sources" in msg:
-                with st.expander("📎 Sources"):
+                with st.expander("📎 View Sources"):
                     for s in msg["sources"]:
-                        st.markdown(f"**📄 {s['source']}** — {s['citation']}")
-                        st.caption(f"*\"{s['excerpt']}\"*")
+                        st.markdown(f"**📄 {s['source']}** — Page {s['page']}")
+                        st.markdown(
+                            f"> {s['excerpt']}",
+                            help="Exact text retrieved from the document"
+                        )
+                        st.divider()
+
     # ── Chat input ────────────────────────────────────────────
     question = st.chat_input("Ask anything about your document...")
 
     if question:
-        # Show user message
         st.session_state.messages.append({"role": "user", "content": question})
         with st.chat_message("user"):
             st.markdown(question)
 
-        # Get answer from API
         with st.chat_message("assistant"):
-            with st.spinner("Searching document..."):
+            with st.spinner("Searching documents..."):
                 response = requests.post(
                     f"{API_URL}/ask",
                     json={"question": question}
                 )
                 if response.status_code == 200:
-                    data     = response.json()
-                    answer   = data["answer"]
-                    sources  = data["sources"]
+                    data    = response.json()
+                    answer  = data["answer"]
+                    sources = data["sources"]
 
                     st.markdown(answer)
-                    with st.expander("📎 Sources"):
+                    with st.expander("📎 View Sources"):
                         for s in sources:
-                            st.markdown(f"**📄 {s['source']}** — {s['citation']}")
-                            st.caption(f"*\"{s['excerpt']}\"*")
+                            st.markdown(f"**📄 {s['source']}** — Page {s['page']}")
+                            st.markdown(f"> {s['excerpt']}")
+                            st.divider()
 
                     st.session_state.messages.append({
                         "role":    "assistant",
@@ -116,7 +126,6 @@ with col2:
                     st.error("❌ Failed to get answer. Is the API running?")
 
     # ── Suggested questions ───────────────────────────────────
-# ── Suggested questions ───────────────────────────────────
     st.divider()
     st.markdown("**💡 Try asking:**")
     suggestions = [
@@ -130,14 +139,8 @@ with col2:
     cols = st.columns(2)
     for i, s in enumerate(suggestions):
         if cols[i % 2].button(s, use_container_width=True):
-            # Show user message
             st.session_state.messages.append({"role": "user", "content": s})
-
-            # Call API immediately
-            response = requests.post(
-                f"{API_URL}/ask",
-                json={"question": s}
-            )
+            response = requests.post(f"{API_URL}/ask", json={"question": s})
             if response.status_code == 200:
                 data = response.json()
                 st.session_state.messages.append({
