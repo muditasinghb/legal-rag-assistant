@@ -47,6 +47,14 @@ def embed_text(text: str, task: str = "retrieval_query") -> list:
     )
     return result["embedding"]
 
+def embed_texts_batch(texts: list, task: str = "retrieval_document") -> list:
+    result = genai.embed_content(
+        model="models/gemini-embedding-001",
+        content=texts,
+        task_type=task
+    )
+    return result["embedding"]
+
 # ── Helper: search ChromaDB ──────────────────────────────────
 def search_chunks(query: str, top_k: int = 3) -> list:
     query_embedding = embed_text(query)
@@ -134,7 +142,7 @@ async def ingest_pdf(file: UploadFile = File(...)):
     # Embed and store
     ids        = [f"{file.filename}_chunk_{i}" for i in range(len(chunks))]
     metadatas  = [{"source": file.filename, "chunk_index": i, "page": f"Section {i+1}"} for i in range(len(chunks))]
-    embeddings = [embed_text(c, task="retrieval_document") for c in chunks]
+    embeddings = embed_texts_batch(chunks)
 
     collection.add(
         documents=chunks,
