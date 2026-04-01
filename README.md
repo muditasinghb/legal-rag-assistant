@@ -1,5 +1,12 @@
 # ⚖️ Legal RAG Assistant
-
+---
+title: Legal RAG Assistant
+emoji: ⚖️
+colorFrom: blue
+colorTo: indigo
+sdk: docker
+pinned: false
+---
 > An end-to-end Retrieval Augmented Generation (RAG) pipeline that lets you upload any legal document and ask questions about it in plain English — with cited, accurate answers.
 
 ![Python](https://img.shields.io/badge/Python-3.10+-blue?style=flat-square&logo=python)
