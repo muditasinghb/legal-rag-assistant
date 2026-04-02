@@ -75,6 +75,46 @@ System → "Either party may terminate this agreement with 30 days
 └─────────────────────────────────────────────────────────────────┘
 ```
 
+## 🗺️ Full Workflow
+
+```mermaid
+flowchart TD
+    subgraph User Session
+        A([👤 User Opens App]) --> B[Streamlit generates\nunique session_id]
+    end
+
+    subgraph Upload Flow
+        B --> C[User uploads PDF]
+        C --> D[POST /ingest?session_id=...]
+        D --> E[Extract text\nvia PyPDF]
+        E --> F[Split into\n500-word chunks]
+        F --> G[BGE Embeddings\nlocal, no API]
+        G --> H[(ChromaDB\nIn-Memory Collection\nfor this session only)]
+    end
+
+    subgraph Query Flow
+        B --> I[User types question]
+        I --> J[POST /ask\nsession_id in body]
+        J --> K[Embed question\nvia BGE]
+        K --> L[Cosine similarity search\nagainst session collection]
+        H --> L
+        L --> M[Top 3 relevant chunks]
+        M --> N[Build prompt\nchunks + question]
+        N --> O[LLaMA 3.3 70B\nvia Groq API]
+        O --> P[Cited answer\nreturned to user]
+    end
+
+    subgraph Session Cleanup
+        B --> Q[User clicks\nClear Session]
+        Q --> R[DELETE /session/id\ndestroys collection]
+        R --> S[New session_id\ngenerated]
+    end
+
+    style H fill:#f5a623,color:#000
+    style O fill:#7b61ff,color:#fff
+    style A fill:#2196f3,color:#fff
+```
+
 ### Why RAG instead of just asking an LLM?
 
 ```
@@ -94,7 +134,7 @@ Question → LLM memory            Question → Search YOUR document
 | Layer | Technology | Why This Choice |
 |---|---|---|
 | **Embeddings** | `BAAI/bge-base-en-v1.5` | Top-ranked on MTEB benchmark, runs locally — no API calls, no rate limits |
-| **Vector Database** | ChromaDB | Lightweight, persistent, runs in-process |
+| **Vector Database** | ChromaDB | In-memory, session-isolated (EphemeralClient) — no data leaks between users |
 | **LLM** | LLaMA 3.3 70B via Groq | Free API, fast inference, strong reasoning |
 | **Backend** | FastAPI + Uvicorn | Async REST API, auto-generated docs at `/docs` |
 | **Frontend** | Streamlit | Rapid UI with built-in chat components |
@@ -107,6 +147,7 @@ Question → LLM memory            Question → Search YOUR document
 
 ## ✨ Features
 
+- **Session isolation** — each user gets their own in-memory vector store; no data leaks between users
 - **Multi-document support** — upload multiple PDFs, ask questions across all of them
 - **Chat history** — full conversation history within a session
 - **Source highlighting** — see the exact paragraph from the document that supports each answer
@@ -198,9 +239,10 @@ http://localhost:8501
 | Method | Endpoint | Description |
 |---|---|---|
 | `GET` | `/` | Health check |
-| `POST` | `/ingest` | Upload & process a PDF |
-| `POST` | `/ask` | Ask a question, get cited answer |
-| `GET` | `/documents` | List all ingested documents |
+| `POST` | `/ingest?session_id=...` | Upload & process a PDF for a session |
+| `POST` | `/ask` | Ask a question, get cited answer (body: `{question, session_id}`) |
+| `GET` | `/documents?session_id=...` | List documents ingested in a session |
+| `DELETE` | `/session/{session_id}` | Clear all data for a session |
 
 Interactive API docs:
 ```
@@ -227,7 +269,7 @@ Once you upload a contract, try:
 - [ ] Clause risk flagging (highlight potentially unfair terms)
 - [ ] Support for DOCX and TXT files
 - [ ] Fine-tuned embeddings on legal corpus (CUAD dataset)
-- [ ] User authentication and persistent sessions
+- [ ] User authentication with persistent named sessions
 
 ---
 
